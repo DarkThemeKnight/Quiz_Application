@@ -26,6 +26,34 @@ export const answerSchema = z.discriminatedUnion('kind', [
 
 export type Answer = z.infer<typeof answerSchema>;
 
+/**
+ * Structural equality for idempotent answer saves.
+ * Object key order must not matter: PostgreSQL jsonb reorders keys, and the client
+ * rebuilds fill-gap maps in placeholder order.
+ */
+export function answersEqual(a: Answer | null, b: Answer | null): boolean {
+  if (a === b) return true;
+  if (!a || !b || a.kind !== b.kind) return false;
+  switch (a.kind) {
+    case 'single_choice':
+      return b.kind === 'single_choice' && a.optionId === b.optionId;
+    case 'multi_choice': {
+      if (b.kind !== 'multi_choice' || a.optionIds.length !== b.optionIds.length) return false;
+      const left = [...a.optionIds].sort();
+      const right = [...b.optionIds].sort();
+      return left.every((id, i) => id === right[i]);
+    }
+    case 'true_false':
+      return b.kind === 'true_false' && a.value === b.value;
+    case 'fill_gap': {
+      if (b.kind !== 'fill_gap') return false;
+      const keys = Object.keys(a.blanks);
+      if (keys.length !== Object.keys(b.blanks).length) return false;
+      return keys.every((key) => Object.hasOwn(b.blanks, key) && a.blanks[key] === b.blanks[key]);
+    }
+  }
+}
+
 export interface Grade {
   isCorrect: boolean;
   /** Fill-gap only: correctness of each blank by key. */

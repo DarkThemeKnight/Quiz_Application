@@ -82,26 +82,44 @@ export async function previewImport(db: Db, req: ImportRequest): Promise<ImportP
 
   const newSubjects = new Map<string, string>();
   const newTopics = new Map<string, string>();
+  const seenPrint = new Map<string, number>();
   let duplicateRows = 0;
   const rows = validation.rows.map((r) => {
     let duplicateOf: string | null = null;
+    let willSkip = false;
     const warnings = [...r.warnings];
     if (r.question) {
       const q = r.question;
+      const inFileRow = seenPrint.get(q.fingerprint);
       if (q.externalId && existing.byExternal.has(q.externalId)) {
         duplicateOf = existing.byExternal.get(q.externalId) ?? null;
+        willSkip = true;
         warnings.push(
           `externalId "${q.externalId}" is already in the bank — this row will be skipped.`,
         );
-      } else if (existing.byPrint.has(q.fingerprint)) {
-        duplicateOf = existing.byPrint.get(q.fingerprint) ?? null;
-        warnings.push(
-          req.duplicates === 'skip'
-            ? 'A question with the same prompt already exists — this row will be skipped.'
-            : 'A question with the same prompt already exists — it will be imported anyway.',
-        );
+      } else if (existing.byPrint.has(q.fingerprint) || inFileRow !== undefined) {
+        const inBank = existing.byPrint.has(q.fingerprint);
+        duplicateOf = existing.byPrint.get(q.fingerprint) ?? `row:${inFileRow ?? r.row}`;
+        if (req.duplicates === 'skip') willSkip = true;
+        if (inFileRow !== undefined && !inBank) {
+          const msg =
+            req.duplicates === 'skip'
+              ? `Same prompt as row ${inFileRow} in this file — this row will be skipped.`
+              : `Same prompt as row ${inFileRow} in this file — it will be imported anyway.`;
+          const generic = warnings.findIndex((w) => w.startsWith('Same prompt as row'));
+          if (generic >= 0) warnings[generic] = msg;
+          else warnings.push(msg);
+        } else {
+          warnings.push(
+            req.duplicates === 'skip'
+              ? 'A question with the same prompt already exists — this row will be skipped.'
+              : 'A question with the same prompt already exists — it will be imported anyway.',
+          );
+        }
       }
-      if (duplicateOf) duplicateRows++;
+      if (willSkip) duplicateRows++;
+      // Only prompts that will be written can make a later row a duplicate.
+      if (!willSkip) seenPrint.set(q.fingerprint, r.row);
       const subjectId = subjectByName.get(lower(q.subjectName));
       if (!subjectId) newSubjects.set(lower(q.subjectName), q.subjectName);
       if (q.topicName && (!subjectId || !topicKeys.has(`${subjectId}:${lower(q.topicName)}`))) {
@@ -247,12 +265,15 @@ export async function commitImport(db: Db, req: ImportRequest): Promise<ImportCo
           kind: q.kind,
           difficulty: q.difficulty,
           status: q.status,
+          reviewStatus: q.reviewStatus,
           body: q.body,
           fingerprint: q.fingerprint,
           explanation: q.explanation,
           hint: q.hint,
           sourceLabel: q.sourceLabel,
+          verifiedAt: q.verifiedAt,
           externalId: q.externalId,
+          archivedAt: q.status === 'archived' ? new Date() : null,
           config:
             q.kind === 'true_false'
               ? { correctBoolean: q.correctBoolean ?? undefined }
@@ -304,7 +325,9 @@ export interface ExportedQuestion {
   topic?: string;
   type: QuestionKind;
   difficulty: string;
-  status: 'draft' | 'published';
+  status: 'draft' | 'published' | 'archived';
+  reviewStatus: string;
+  verifiedAt?: string | null;
   prompt: string;
   explanation: string;
   hint: string;
@@ -324,6 +347,7 @@ export async function exportBank(db: Db, includeArchived: boolean) {
       id: questions.id,
       externalId: questions.externalId,
       status: questions.status,
+      reviewStatus: questions.reviewStatus,
       verifiedAt: questions.verifiedAt,
     })
     .from(questions)
@@ -352,7 +376,9 @@ export async function exportBank(db: Db, includeArchived: boolean) {
       ...(s.topic ? { topic: s.topic.name } : {}),
       type: s.kind,
       difficulty: s.difficulty,
-      status: r.status === 'draft' ? 'draft' : 'published',
+      status: r.status,
+      reviewStatus: r.reviewStatus,
+      ...(r.verifiedAt ? { verifiedAt: r.verifiedAt } : {}),
       prompt: s.body,
       explanation: s.explanation,
       hint: s.hint,
@@ -371,7 +397,14 @@ export async function exportBank(db: Db, includeArchived: boolean) {
         },
       ];
     }
-    if (s.kind === 'true_false') return [{ ...base, correctBoolean: s.correctBoolean ?? false }];
+    if (s.kind === 'true_false') {
+      return [
+        {
+          ...base,
+          ...(typeof s.correctBoolean === 'boolean' ? { correctBoolean: s.correctBoolean } : {}),
+        },
+      ];
+    }
     const norm = s.normalization;
     const custom =
       norm.caseSensitive !== DEFAULT_NORMALIZATION.caseSensitive ||

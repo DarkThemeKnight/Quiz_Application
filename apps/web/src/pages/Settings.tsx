@@ -15,6 +15,34 @@ import { PageHeader, errorMessage, useConfirm, useDocumentTitle, useToast } from
 import { applyTheme } from '../lib/theme';
 import { formatDateTime, plural } from '../lib/format';
 
+/** "Chrome on Linux" instead of the full user-agent string. */
+function describeBrowser(ua: string): string {
+  if (!ua) return 'Unknown browser';
+  const browser = /Edg\//.test(ua)
+    ? 'Edge'
+    : /OPR\//.test(ua)
+      ? 'Opera'
+      : /Firefox\//.test(ua)
+        ? 'Firefox'
+        : /Chrome\//.test(ua)
+          ? 'Chrome'
+          : /Safari\//.test(ua)
+            ? 'Safari'
+            : 'Browser';
+  const os = /Android/.test(ua)
+    ? 'Android'
+    : /iPhone|iPad/.test(ua)
+      ? 'iOS'
+      : /Windows/.test(ua)
+        ? 'Windows'
+        : /Mac OS X/.test(ua)
+          ? 'macOS'
+          : /Linux/.test(ua)
+            ? 'Linux'
+            : 'unknown OS';
+  return `${browser} on ${os}`;
+}
+
 export function SettingsPage({ me }: { me: Me }) {
   useDocumentTitle('Settings');
   const client = useQueryClient();
@@ -377,7 +405,7 @@ function SecuritySection({ confirm }: { confirm: ReturnType<typeof useConfirm> }
           <div className="insight" key={s.id}>
             <div className="grow">
               <div style={{ fontWeight: 600, overflowWrap: 'anywhere' }}>
-                {s.userAgent ? s.userAgent.slice(0, 90) : 'Unknown browser'}{' '}
+                <span title={s.userAgent}>{describeBrowser(s.userAgent)}</span>{' '}
                 {s.current && <span className="badge badge-accent">This browser</span>}
               </div>
               <div className="small">

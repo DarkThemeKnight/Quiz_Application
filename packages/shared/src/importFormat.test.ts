@@ -81,3 +81,16 @@ describe('CSV import', () => {
     expect(result.rows[1]?.errors.join(' ')).toMatch(/Expected 4 columns/);
   });
 });
+
+describe('import templates in examples/', () => {
+  it('JSON template validates cleanly', () => {
+    const r = validateJsonImport(readFileSync(`${examples}import_template.json`, 'utf8'));
+    expect(r.fatal).toBeNull();
+    expect(r.rows.flatMap((x) => x.errors)).toEqual([]);
+  });
+  it('CSV template validates cleanly', () => {
+    const r = validateCsvImport(readFileSync(`${examples}import_template.csv`, 'utf8'));
+    expect(r.fatal).toBeNull();
+    expect(r.rows.flatMap((x) => x.errors)).toEqual([]);
+  });
+});

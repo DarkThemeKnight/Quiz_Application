@@ -288,16 +288,29 @@ export async function updateQuestion(
 }
 
 export async function setArchived(db: Db, id: string, archived: boolean): Promise<void> {
-  const result = await db
+  const [row] = await db.select().from(questions).where(eq(questions.id, id));
+  if (!row) throw notFound('Question');
+  const now = new Date();
+  if (archived) {
+    if (row.status === 'archived') return;
+    const config: QuestionConfig = {
+      ...row.config,
+      statusBeforeArchive: row.status === 'draft' ? 'draft' : 'published',
+    };
+    await db
+      .update(questions)
+      .set({ status: 'archived', archivedAt: now, updatedAt: now, config })
+      .where(eq(questions.id, id));
+    return;
+  }
+  if (row.status !== 'archived') return;
+  const restore = row.config.statusBeforeArchive === 'draft' ? 'draft' : 'published';
+  const config: QuestionConfig = { ...row.config };
+  delete config.statusBeforeArchive;
+  await db
     .update(questions)
-    .set(
-      archived
-        ? { status: 'archived', archivedAt: new Date(), updatedAt: new Date() }
-        : { status: 'published', archivedAt: null, updatedAt: new Date() },
-    )
-    .where(eq(questions.id, id))
-    .returning({ id: questions.id });
-  if (!result[0]) throw notFound('Question');
+    .set({ status: restore, archivedAt: null, updatedAt: now, config })
+    .where(eq(questions.id, id));
 }
 
 /** Permanent deletion is only allowed for archived questions. History keeps its snapshots. */

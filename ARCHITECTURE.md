@@ -174,6 +174,10 @@ Errors: `{ error: { code, message, details? }, requestId }`. Codes include `VALI
 paths), `UNAUTHENTICATED`, `BAD_ORIGIN`, `NOT_FOUND`, `CONFLICT`, `IN_USE`, `DEADLINE_PASSED`, `NO_QUESTIONS`,
 `IMPORT_INVALID`, `RATE_LIMITED`.
 
+Practice answer saves are idempotent by answer value, not JSON key order (jsonb reorders keys). Exam submit on
+the client waits for in-flight and debounced saves. Archiving stores the previous status in question `config`
+so a restored draft stays a draft. JSON export keeps `archived`, `reviewStatus` and `verifiedAt`.
+
 ### Decisions
 
 `docs/decisions/0001`–`0004`: stack/repo layout, sessions/grading/history, spaced review, metric definitions.

@@ -150,6 +150,8 @@ export const tags = pgTable(
 export interface QuestionConfig {
   correctBoolean?: boolean;
   normalization?: NormalizationOptions;
+  /** Set while archived so restore returns a draft to draft, not published. */
+  statusBeforeArchive?: 'draft' | 'published';
 }
 
 export const questions = pgTable(

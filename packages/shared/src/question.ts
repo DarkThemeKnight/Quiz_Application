@@ -194,6 +194,11 @@ export interface PublicQuestion {
   topicName: string | null;
   options: { id: string; body: string }[];
   blankKeys: string[];
+  /**
+   * Fill-in comparison rules. Null for other kinds. This is not an answer key —
+   * the runner uses it so the on-screen instructions match how the answer is graded.
+   */
+  normalization: NormalizationOptions | null;
   /** Present only in practice mode when the question has a hint. */
   hint: string | null;
 }
@@ -207,6 +212,7 @@ export function toPublicQuestion(snapshot: QuestionSnapshot, includeHint: boolea
     topicName: snapshot.topic?.name ?? null,
     options: snapshot.options.map(({ id, body }) => ({ id, body })),
     blankKeys: snapshot.blanks.map((b) => b.key),
+    normalization: snapshot.kind === 'fill_gap' ? snapshot.normalization : null,
     hint: includeHint && snapshot.hint ? snapshot.hint : null,
   };
 }

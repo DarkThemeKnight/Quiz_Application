@@ -153,6 +153,7 @@ describe('public question view', () => {
     expect(json).not.toMatch(/secret|isCorrect|correctBoolean|acceptedAnswers/);
     expect(pub.hint).toBeNull();
     expect(pub.blankKeys).toEqual(['1']);
+    expect(pub.normalization).toEqual(DEFAULT_NORMALIZATION);
   });
 });
 

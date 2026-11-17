@@ -138,6 +138,33 @@ describe('subjects, topics, collections and questions', () => {
     expect(dupes.json.length).toBeGreaterThan(0);
   });
 
+  it('restores an archived draft as a draft and a published question as published', async () => {
+    const p = questionPayloads(subjectId, topicId);
+    const draft = await call<QuestionDetailDto>('POST', '/api/questions', {
+      ...p.trueFalse,
+      body: 'Draft to archive',
+      status: 'draft',
+    });
+    expect(
+      (await call<QuestionDetailDto>('POST', `/api/questions/${draft.json.id}/archive`)).json
+        .status,
+    ).toBe('archived');
+    expect(
+      (await call<QuestionDetailDto>('POST', `/api/questions/${draft.json.id}/restore`)).json
+        .status,
+    ).toBe('draft');
+
+    const published = await call<QuestionDetailDto>('POST', '/api/questions', {
+      ...p.trueFalse,
+      body: 'Published to archive',
+    });
+    await call('POST', `/api/questions/${published.json.id}/archive`);
+    expect(
+      (await call<QuestionDetailDto>('POST', `/api/questions/${published.json.id}/restore`)).json
+        .status,
+    ).toBe('published');
+  });
+
   it('requires archiving before permanent deletion; archived questions are hidden by default', async () => {
     const p = questionPayloads(subjectId, topicId);
     const created = await call<QuestionDetailDto>('POST', '/api/questions', {

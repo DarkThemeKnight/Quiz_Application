@@ -120,6 +120,14 @@ describe('study sessions, grading, history and analytics', () => {
       { key: 'h', acceptedAnswers: ['H'] },
       { key: 'o', acceptedAnswers: ['O', 'oxygen'] },
     ]);
+    // jsonb does not preserve object key order; the same answer must still be idempotent.
+    expect(
+      (
+        await call('PUT', `/api/sessions/${session.id}/items/${fill.id}/answer`, {
+          answer: { kind: 'fill_gap', blanks: { o: 'OXYGEN', h: ' h ' } },
+        })
+      ).status,
+    ).toBe(200);
 
     // Unknown option ids are rejected rather than graded.
     const single = itemFor(session, 'single_choice');

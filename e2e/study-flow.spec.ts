@@ -154,7 +154,7 @@ test('a 15-question timed exam saves answers across reload and keeps its score',
       await page.keyboard.press('1');
     }
     answered++;
-    await expect(page.getByText('Saved')).toBeVisible();
+    await expect(page.getByText('Saved', { exact: true })).toBeVisible();
     await page.getByRole('button', { name: 'Save & next' }).click();
   }
   // No answer key or feedback leaks during an exam.

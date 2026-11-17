@@ -12,7 +12,14 @@ import {
   SkipForward,
   X,
 } from 'lucide-react';
-import type { Answer, SessionDto, SessionItemDto, SessionResultDto } from '@recall/shared';
+import {
+  DEFAULT_NORMALIZATION,
+  type Answer,
+  type NormalizationOptions,
+  type SessionDto,
+  type SessionItemDto,
+  type SessionResultDto,
+} from '@recall/shared';
 import { ApiError, api } from '../api/client';
 import { invalidateStudyData, keys, useSession } from '../api/hooks';
 import { AnswerArea, draftFromAnswer, draftToAnswer, type Draft } from '../components/QuestionView';
@@ -64,6 +71,18 @@ export function RunnerPage() {
   return <Runner session={session.data} />;
 }
 
+function fillGapHint(blankCount: number, normalization: NormalizationOptions | null): string {
+  const rules = normalization ?? DEFAULT_NORMALIZATION;
+  const where = blankCount > 1 ? ` in each of the ${blankCount} blanks` : '';
+  const notes = [
+    rules.caseSensitive ? 'Match capitalisation' : 'Capitalisation does not matter',
+    'extra spaces are ignored',
+  ];
+  if (rules.ignoreAccents) notes.push('accents are ignored');
+  if (rules.ignorePunctuation) notes.push('punctuation is ignored');
+  return `Type your answer${where}. ${notes.join(', ')}.`;
+}
+
 function isTyping(target: EventTarget | null): boolean {
   const el = target as HTMLElement | null;
   return (
@@ -90,12 +109,19 @@ function Runner({ session }: { session: SessionDto }) {
   const [drafts, setDrafts] = useState<Record<string, Draft>>(() =>
     Object.fromEntries(items.map((i) => [i.id, draftFromAnswer(i.question, i.answer)])),
   );
+  const draftsRef = useRef(drafts);
+  draftsRef.current = drafts;
   const [saveState, setSaveState] = useState<Record<string, 'saving' | 'saved' | 'error'>>({});
+  const [savesInFlight, setSavesInFlight] = useState(0);
   const [notice, setNotice] = useState<string | null>(null);
   const [showHint, setShowHint] = useState(false);
   const viewStart = useRef(Date.now());
   const pendingTimers = useRef<Record<string, number>>({});
+  const saveChains = useRef<Record<string, Promise<void>>>({});
+  const saveGen = useRef<Record<string, number>>({});
+  const failedSaves = useRef(new Set<string>());
   const submitting = useRef(false);
+  const finishRef = useRef<(force?: boolean) => Promise<void>>(async () => {});
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   const item = items[index] as SessionItemDto;
@@ -125,11 +151,11 @@ function Runner({ session }: { session: SessionDto }) {
     [client, session.id],
   );
 
-  const takeElapsed = () => {
+  const takeElapsed = useCallback(() => {
     const elapsed = Date.now() - viewStart.current;
     viewStart.current = Date.now();
     return Math.max(0, Math.min(elapsed, 30 * 60 * 1000));
-  };
+  }, []);
 
   /* ---- Submission ---- */
   const submit = useMutation({
@@ -146,39 +172,99 @@ function Runner({ session }: { session: SessionDto }) {
     },
   });
 
-  const finish = useCallback(() => {
-    if (submitting.current) return;
-    submitting.current = true;
-    submit.mutate();
-  }, [submit]);
+  /**
+   * Saves for one item run in order, so a slower earlier request cannot overwrite a later one.
+   * A newer save ignores the response of an older one.
+   */
+  const runSave = useCallback(
+    (itemId: string, answer: Answer | null) => {
+      const myGen = (saveGen.current[itemId] ?? 0) + 1;
+      saveGen.current[itemId] = myGen;
+      failedSaves.current.delete(itemId);
+      setSavesInFlight((n) => n + 1);
+      setSaveState((s) => ({ ...s, [itemId]: 'saving' }));
+      const elapsedMs = takeElapsed();
+      const task = (saveChains.current[itemId] ?? Promise.resolve()).then(() =>
+        api.put<SessionItemDto>(`/sessions/${session.id}/items/${itemId}/answer`, {
+          answer,
+          elapsedMs,
+        }),
+      );
+      const settled = task.then(
+        (updated) => {
+          if (saveGen.current[itemId] !== myGen) return;
+          updateItem(updated);
+          setSaveState((s) => ({ ...s, [itemId]: 'saved' }));
+        },
+        (e: unknown) => {
+          if (saveGen.current[itemId] !== myGen) return;
+          failedSaves.current.add(itemId);
+          setSaveState((s) => ({ ...s, [itemId]: 'error' }));
+          if (e instanceof ApiError && e.code === 'DEADLINE_PASSED') {
+            if (!submitting.current) {
+              toast('Time is up — your exam was submitted.');
+              void finishRef.current(true);
+            }
+          } else toast(errorMessage(e), 'error');
+        },
+      );
+      saveChains.current[itemId] = settled.finally(() => setSavesInFlight((n) => n - 1));
+      return settled;
+    },
+    [session.id, takeElapsed, toast, updateItem],
+  );
+
+  /** Send every debounced draft, then wait until those saves (and any already in flight) settle. */
+  const flushAll = useCallback(async () => {
+    const flushed = new Set<string>();
+    for (const itemId of Object.keys(pendingTimers.current)) {
+      const timer = pendingTimers.current[itemId];
+      if (timer !== undefined) window.clearTimeout(timer);
+      delete pendingTimers.current[itemId];
+      const pending = draftsRef.current[itemId];
+      if (pending) {
+        flushed.add(itemId);
+        void runSave(itemId, draftToAnswer(pending));
+      }
+    }
+    for (const itemId of [...failedSaves.current]) {
+      if (flushed.has(itemId)) continue;
+      const pending = draftsRef.current[itemId];
+      if (pending) void runSave(itemId, draftToAnswer(pending));
+    }
+    await Promise.all(
+      Object.values(saveChains.current).map((p) =>
+        p.then(
+          () => undefined,
+          () => undefined,
+        ),
+      ),
+    );
+    return failedSaves.current.size > 0;
+  }, [runSave]);
+
+  const finish = useCallback(
+    async (force = false) => {
+      if (submitting.current) return;
+      submitting.current = true;
+      const failed = await flushAll();
+      if (failed && !force) {
+        submitting.current = false;
+        toast('An answer could not be saved, so the session was not submitted.', 'error');
+        return;
+      }
+      submit.mutate();
+    },
+    [flushAll, submit, toast],
+  );
+  finishRef.current = finish;
 
   useEffect(() => {
     if (remaining !== null && remaining <= 0 && !submitting.current) {
       toast('Time is up — your exam was submitted.');
-      finish();
+      void finish(true);
     }
   }, [remaining, finish, toast]);
-
-  /* ---- Saving answers ---- */
-  const save = useMutation({
-    mutationFn: (vars: { itemId: string; answer: Answer | null; elapsedMs: number }) =>
-      api.put<SessionItemDto>(`/sessions/${session.id}/items/${vars.itemId}/answer`, {
-        answer: vars.answer,
-        elapsedMs: vars.elapsedMs,
-      }),
-    onMutate: (vars) => setSaveState((s) => ({ ...s, [vars.itemId]: 'saving' })),
-    onSuccess: (updated) => {
-      updateItem(updated);
-      setSaveState((s) => ({ ...s, [updated.id]: 'saved' }));
-    },
-    onError: (e, vars) => {
-      setSaveState((s) => ({ ...s, [vars.itemId]: 'error' }));
-      if (e instanceof ApiError && e.code === 'DEADLINE_PASSED') {
-        toast('Time is up — your exam was submitted.');
-        finish();
-      } else toast(errorMessage(e), 'error');
-    },
-  });
 
   const flags = useMutation({
     mutationFn: (vars: {
@@ -194,48 +280,40 @@ function Runner({ session }: { session: SessionDto }) {
       }),
     onSuccess: (updated) => {
       updateItem(updated);
-      if (updated.state === 'skipped')
-        setDrafts((d) => ({ ...d, [updated.id]: draftFromAnswer(updated.question, null) }));
+      if (updated.state === 'skipped') {
+        const cleared = draftFromAnswer(updated.question, null);
+        draftsRef.current = { ...draftsRef.current, [updated.id]: cleared };
+        setDrafts(draftsRef.current);
+      }
     },
     onError: (e) => toast(errorMessage(e), 'error'),
   });
 
-  /** Exam: persist the current draft (immediately or after a short pause while typing). */
-  const persistExamDraft = useCallback(
-    (itemId: string, next: Draft, delayMs: number) => {
-      window.clearTimeout(pendingTimers.current[itemId]);
-      const run = () => {
-        delete pendingTimers.current[itemId];
-        save.mutate({ itemId, answer: draftToAnswer(next), elapsedMs: takeElapsed() });
-      };
-      if (delayMs === 0) run();
-      else pendingTimers.current[itemId] = window.setTimeout(run, delayMs);
-    },
-    [save],
-  );
-
-  const flushPending = useCallback(() => {
-    for (const [itemId, timer] of Object.entries(pendingTimers.current)) {
-      window.clearTimeout(timer);
+  /** Exam: persist the current draft (immediately, or after a short pause while typing). */
+  const persistExamDraft = (itemId: string, next: Draft, delayMs: number) => {
+    window.clearTimeout(pendingTimers.current[itemId]);
+    const run = () => {
       delete pendingTimers.current[itemId];
-      const d = drafts[itemId];
-      if (d) save.mutate({ itemId, answer: draftToAnswer(d), elapsedMs: takeElapsed() });
-    }
-  }, [drafts, save]);
+      void runSave(itemId, draftToAnswer(next));
+    };
+    if (delayMs === 0) run();
+    else pendingTimers.current[itemId] = window.setTimeout(run, delayMs);
+  };
 
   const onDraftChange = (next: Draft) => {
     if (locked) return;
     setNotice(null);
-    setDrafts((d) => ({ ...d, [item.id]: next }));
+    draftsRef.current = { ...draftsRef.current, [item.id]: next };
+    setDrafts(draftsRef.current);
     if (isExam) persistExamDraft(item.id, next, next.kind === 'fill_gap' ? 700 : 0);
   };
 
   /* ---- Navigation ---- */
-  const goTo = (next: number) => {
+  const goTo = (next: number, flush = true) => {
     if (next < 0 || next >= total || next === index) return;
-    flushPending();
+    if (flush) void flushAll();
     const elapsed = takeElapsed();
-    if (elapsed > 1500 && !locked && item.state !== 'answered') {
+    if (elapsed > 1500 && !locked && item.state !== 'answered' && item.state !== 'skipped') {
       flags.mutate({ itemId: item.id, elapsedMs: elapsed });
     }
     setIndex(next);
@@ -260,12 +338,39 @@ function Runner({ session }: { session: SessionDto }) {
       );
       return;
     }
-    save.mutate({ itemId: item.id, answer, elapsedMs: takeElapsed() });
+    void runSave(item.id, answer);
   };
 
   const skip = () => {
-    flags.mutate({ itemId: item.id, skipped: true, elapsedMs: takeElapsed() });
-    if (index < total - 1) goTo(index + 1);
+    const itemId = item.id;
+    const timer = pendingTimers.current[itemId];
+    if (timer !== undefined) window.clearTimeout(timer);
+    delete pendingTimers.current[itemId];
+    const myGen = (saveGen.current[itemId] ?? 0) + 1;
+    saveGen.current[itemId] = myGen;
+    failedSaves.current.delete(itemId);
+    const elapsedMs = takeElapsed();
+    const task = (saveChains.current[itemId] ?? Promise.resolve()).then(() =>
+      api.patch<SessionItemDto>(`/sessions/${session.id}/items/${itemId}`, {
+        skipped: true,
+        elapsedMs,
+      }),
+    );
+    saveChains.current[itemId] = task.then(
+      (updated) => {
+        if (saveGen.current[itemId] !== myGen) return;
+        updateItem(updated);
+        const cleared = draftFromAnswer(updated.question, null);
+        draftsRef.current = { ...draftsRef.current, [updated.id]: cleared };
+        setDrafts(draftsRef.current);
+      },
+      (e: unknown) => {
+        if (saveGen.current[itemId] !== myGen) return;
+        failedSaves.current.add(itemId);
+        toast(errorMessage(e), 'error');
+      },
+    );
+    if (index < total - 1) goTo(index + 1, false);
   };
 
   const toggleMark = () =>
@@ -284,11 +389,25 @@ function Runner({ session }: { session: SessionDto }) {
   }, [items, total]);
 
   const askSubmit = async () => {
-    flushPending();
+    const failed = await flushAll();
+    if (failed) {
+      toast('An answer could not be saved. Check the connection and try again.', 'error');
+      return;
+    }
+    const current = client.getQueryData<SessionDto>(keys.session(session.id));
+    const itemsNow = current?.items ?? items;
+    let unanswered = 0;
+    let skipped = 0;
+    let marked = 0;
+    for (const i of itemsNow) {
+      if (i.state === 'skipped') skipped++;
+      else if (i.state !== 'answered') unanswered++;
+      if (i.markedForReview) marked++;
+    }
     const parts = [
-      counts.unanswered ? `${plural(counts.unanswered, 'question')} unanswered` : null,
-      counts.skipped ? `${counts.skipped} skipped` : null,
-      counts.marked ? `${counts.marked} marked for review` : null,
+      unanswered ? `${plural(unanswered, 'question')} unanswered` : null,
+      skipped ? `${skipped} skipped` : null,
+      marked ? `${marked} marked for review` : null,
     ].filter(Boolean);
     const ok = await confirm({
       title: isExam ? 'Submit exam?' : 'Finish session?',
@@ -305,7 +424,7 @@ function Runner({ session }: { session: SessionDto }) {
       ),
       confirmLabel: isExam ? 'Submit exam' : 'Finish and see results',
     });
-    if (ok) finish();
+    if (ok) void finish(false);
   };
 
   const discard = async () => {
@@ -371,11 +490,11 @@ function Runner({ session }: { session: SessionDto }) {
   // Flush pending exam saves if the tab is closed or hidden.
   useEffect(() => {
     const onHide = () => {
-      if (document.visibilityState === 'hidden') flushPending();
+      if (document.visibilityState === 'hidden') void flushAll();
     };
     document.addEventListener('visibilitychange', onHide);
     return () => document.removeEventListener('visibilitychange', onHide);
-  }, [flushPending]);
+  }, [flushAll]);
 
   const feedback = item.feedback;
   const kindHint =
@@ -385,7 +504,7 @@ function Runner({ session }: { session: SessionDto }) {
         ? 'Choose one answer.'
         : item.question.kind === 'true_false'
           ? 'Is the statement true or false?'
-          : `Type your answer${item.question.blankKeys.length > 1 ? ` in each of the ${item.question.blankKeys.length} blanks` : ''}. Case and extra spaces are ignored.`;
+          : fillGapHint(item.question.blankKeys.length, item.question.normalization);
   const status = saveState[item.id];
   const lowTime = remaining !== null && remaining <= 60_000;
   const isLast = index === total - 1;
@@ -393,7 +512,7 @@ function Runner({ session }: { session: SessionDto }) {
   return (
     <div className="runner">
       <div className="runner-top">
-        <Link to="/" className="btn btn-secondary btn-sm" onClick={flushPending}>
+        <Link to="/" className="btn btn-secondary btn-sm" onClick={() => void flushAll()}>
           <LogOut size={15} aria-hidden="true" /> Leave
         </Link>
         <span className="small tabular" aria-live="polite">
@@ -574,7 +693,7 @@ function Runner({ session }: { session: SessionDto }) {
                 type="button"
                 className="btn btn-primary"
                 onClick={check}
-                disabled={save.isPending}
+                disabled={savesInFlight > 0}
               >
                 Check answer <ArrowRight size={16} aria-hidden="true" />
               </button>

@@ -144,6 +144,68 @@ describe('import and export', () => {
     expect(csvPreview.json.totalRows).toBe(total);
   });
 
+  it('skips a repeated prompt in the same file only after the preview says so', async () => {
+    const q = {
+      type: 'true_false',
+      prompt: 'Unique twin prompt for duplicate handling',
+      correctBoolean: true,
+      subject: 'Twins',
+      externalId: 'twin-a',
+    };
+    const content = JSON.stringify({
+      format: 'recall-studio-question-bank',
+      version: 1,
+      questions: [q, { ...q, externalId: 'twin-b' }],
+    });
+    const preview = await call<ImportPreviewDto>('POST', '/api/import/questions/validate', {
+      format: 'json',
+      content,
+      duplicates: 'skip',
+    });
+    expect(preview.json.errorRows).toBe(0);
+    expect(preview.json.duplicateRows).toBe(1);
+    expect(preview.json.rows[1]?.warnings.join(' ')).toMatch(/skipped/);
+    const commit = await call<ImportCommitDto>('POST', '/api/import/questions/commit', {
+      format: 'json',
+      content,
+      duplicates: 'skip',
+    });
+    expect(commit.json).toMatchObject({ imported: 1, skippedDuplicates: 1 });
+  });
+
+  it('imports an archived question as archived and exports it that way', async () => {
+    const content = JSON.stringify({
+      format: 'recall-studio-question-bank',
+      version: 1,
+      questions: [
+        {
+          type: 'true_false',
+          prompt: 'This archived statement is false',
+          correctBoolean: false,
+          subject: 'Archive Subject',
+          status: 'archived',
+          reviewStatus: 'needs_update',
+          externalId: 'arch-1',
+        },
+      ],
+    });
+    const commit = await call<ImportCommitDto>('POST', '/api/import/questions/commit', {
+      format: 'json',
+      content,
+    });
+    expect(commit.json.imported).toBe(1);
+    const list = await call<Paginated<QuestionSummaryDto>>(
+      'GET',
+      '/api/questions?status=archived&q=archived%20statement',
+    );
+    expect(list.json.items.some((q) => q.reviewStatus === 'needs_update')).toBe(true);
+    const exported = await call<{ questions: { externalId: string; status: string }[] }>(
+      'GET',
+      '/api/export/questions?includeArchived=true',
+    );
+    expect(exported.json.questions.find((q) => q.externalId === 'arch-1')?.status).toBe('archived');
+  });
+
   it('exports progress as JSON', async () => {
     const progress = await call<{ format: string; sessions: unknown[] }>(
       'GET',

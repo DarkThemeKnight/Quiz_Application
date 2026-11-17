@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { answerSchema, gradeAnswer, validateAnswerForQuestion } from './grading.js';
+import { answerSchema, answersEqual, gradeAnswer, validateAnswerForQuestion } from './grading.js';
 import { DEFAULT_NORMALIZATION, normalizeAnswer } from './normalize.js';
 import type { QuestionSnapshot } from './question.js';
 
@@ -132,6 +132,12 @@ describe('fill in the gap', () => {
     expect(
       gradeAnswer(two, { kind: 'fill_gap', blanks: { '1': 'Sodium', '2': 'k' } }).isCorrect,
     ).toBe(true);
+  });
+  it('treats the same blanks as equal regardless of key order', () => {
+    const answer = { kind: 'fill_gap' as const, blanks: { o: 'OXYGEN', h: ' h ' } };
+    const stored = { kind: 'fill_gap' as const, blanks: { h: ' h ', o: 'OXYGEN' } };
+    expect(answersEqual(answer, stored)).toBe(true);
+    expect(answersEqual(answer, { kind: 'fill_gap', blanks: { h: 'h', o: 'OXYGEN' } })).toBe(false);
   });
   it('requires every blank to be correct and reports per blank', () => {
     const grade = gradeAnswer(two, { kind: 'fill_gap', blanks: { '1': 'Na', '2': 'Ca' } });

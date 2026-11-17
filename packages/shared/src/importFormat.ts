@@ -1,5 +1,12 @@
 import { z } from 'zod';
-import { DIFFICULTIES, QUESTION_KINDS, type Difficulty, type QuestionKind } from './domain.js';
+import {
+  DIFFICULTIES,
+  QUESTION_KINDS,
+  REVIEW_STATUSES,
+  type Difficulty,
+  type QuestionKind,
+  type ReviewStatus,
+} from './domain.js';
 import { parseCsv, CsvParseError } from './csv.js';
 import { normalizationSchema, validateQuestionContent } from './question.js';
 import {
@@ -24,7 +31,13 @@ export const importQuestionSchema = z
     topic: str(120).optional(),
     type: z.enum(QUESTION_KINDS),
     difficulty: z.enum(DIFFICULTIES).default('medium'),
-    status: z.enum(['draft', 'published']).default('published'),
+    status: z.enum(['draft', 'published', 'archived']).default('published'),
+    reviewStatus: z.enum(REVIEW_STATUSES).default('unreviewed'),
+    verifiedAt: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, 'Use YYYY-MM-DD')
+      .nullable()
+      .default(null),
     prompt: str(5000).min(1, 'prompt is required'),
     options: z
       .array(z.object({ id: str(64).min(1), text: str(1000).min(1) }).strict())
@@ -68,7 +81,9 @@ export interface ImportedQuestion {
   topicName: string | null;
   kind: QuestionKind;
   difficulty: Difficulty;
-  status: 'draft' | 'published';
+  status: 'draft' | 'published' | 'archived';
+  reviewStatus: ReviewStatus;
+  verifiedAt: string | null;
   body: string;
   options: { body: string; isCorrect: boolean }[];
   correctBoolean: boolean | null;
@@ -175,6 +190,8 @@ function convert(raw: unknown, defaultSubject: string | undefined, row: number):
       kind: q.type,
       difficulty: q.difficulty,
       status: q.status,
+      reviewStatus: q.reviewStatus,
+      verifiedAt: q.verifiedAt,
       body: q.prompt,
       options,
       correctBoolean: content.correctBoolean,

@@ -1,6 +1,7 @@
 import { and, asc, count, desc, eq, inArray, sql, type SQL } from 'drizzle-orm';
 import {
   answerSchema,
+  answersEqual,
   clampDurationMs,
   gradeAnswer,
   summarizeScore,
@@ -319,14 +320,6 @@ async function lockItem(tx: Tx, sessionId: string, itemId: string): Promise<Item
   return item;
 }
 
-function sameAnswer(a: Answer | null, b: Answer | null): boolean {
-  if (!a || !b) return a === b;
-  if (a.kind === 'multi_choice' && b.kind === 'multi_choice') {
-    return [...a.optionIds].sort().join('|') === [...b.optionIds].sort().join('|');
-  }
-  return JSON.stringify(a) === JSON.stringify(b);
-}
-
 /**
  * Save an answer. Practice: graded and locked immediately (idempotent for the same answer).
  * Exam: stored without grading; may be changed or cleared until submission/deadline.
@@ -354,7 +347,7 @@ export async function saveAnswer(
 
     // Idempotent replay of an already-checked practice answer.
     if (session.mode === 'practice' && item.locked) {
-      if (sameAnswer(item.answer, answer)) return { session, item };
+      if (answersEqual(item.answer, answer)) return { session, item };
       throw conflict('This answer was already checked and cannot be changed.');
     }
     await lockActive(tx, ownerId, sessionId);

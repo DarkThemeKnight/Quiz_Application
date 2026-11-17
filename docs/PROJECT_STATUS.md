@@ -1,5 +1,36 @@
 # Project status — shared handoff
 
+## Snapshot — 2026-11-17 · Grok (review fixes)
+
+Reviewed the M0–M5 implementation against `BUILD_PROMPT.md` and fixed correctness bugs. No schema migration.
+
+### Corrected behaviour
+
+- Practice “check answer” is idempotent for fill-in answers even when blank-key order differs from the jsonb copy PostgreSQL stores.
+- Exam submit, including the timer, waits until debounced and in-flight answer saves finish. Skip no longer races with a pending save. A failed save blocks a manual submit and is retried on the next attempt.
+- Fill-in instructions follow the question’s normalisation (case, accents, punctuation) instead of always saying capitalisation is ignored.
+- Restoring an archived draft returns it to draft. Published questions still restore as published. Questions archived before this change restore as published.
+- JSON/CSV import preview counts only rows that will be skipped. A repeated prompt in the same file is skipped only in “skip duplicates” mode, and the preview says so. `externalId` duplicates are always skipped, including when “import anyway” is selected.
+- Export keeps archived questions archived (it no longer rewrites them as published). JSON export includes `reviewStatus` and `verifiedAt`. A true/false question with no stored boolean is not exported as “false”.
+
+### Commands (Node 24.13.0; the default `node` on this machine is 18 and cannot run Vitest 5)
+
+| Command                           | Result                               |
+| --------------------------------- | ------------------------------------ |
+| `pnpm typecheck`                  | pass                                 |
+| `pnpm lint`                       | pass                                 |
+| `pnpm format:check`               | pass                                 |
+| `pnpm test`                       | pass — shared 53, api 46, web 7      |
+| `pnpm --filter @recall/web build` | pass                                 |
+| `pnpm --filter @recall/api build` | pass                                 |
+| `pnpm test:e2e`                   | pass — 7 tests (6 desktop, 1 mobile) |
+
+### Still open
+
+- No owner account in `quiz_application` until `pnpm owner:create`.
+- No automated axe scan. Bulk bank actions and a timed-exam E2E for auto-submit are still undone.
+- Nested topics are not created by import. CSV still does not carry per-question normalisation (JSON does).
+
 ## Snapshot — 2026-11-17 · Claude (Opus 5.5)
 
 | Item           | Value                                                                                                                                            |

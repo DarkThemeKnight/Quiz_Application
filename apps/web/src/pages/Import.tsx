@@ -167,7 +167,8 @@ export function ImportPage() {
   };
 
   const p = preview.data;
-  const canCommit = p && !p.fatal && p.errorRows === 0 && p.validRows > 0 && !commit.isSuccess;
+  const willImport = p ? Math.max(0, p.validRows - p.duplicateRows) : 0;
+  const canCommit = p && !p.fatal && p.errorRows === 0 && willImport > 0 && !commit.isSuccess;
 
   return (
     <div className="page">
@@ -317,7 +318,7 @@ export function ImportPage() {
             <h2 id="preview-title">3. Review</h2>
             <span className="small">
               {plural(p.totalRows, 'row')} · {p.validRows} valid · {p.errorRows} with errors ·{' '}
-              {p.duplicateRows} duplicates
+              {plural(p.duplicateRows, 'duplicate')} skipped
             </span>
           </div>
           {p.fatal ? (
@@ -344,8 +345,7 @@ export function ImportPage() {
                 <CheckCircle2 size={16} aria-hidden="true" /> Ready to import
               </strong>
               <p>
-                {duplicates === 'skip' ? `${p.validRows - p.duplicateRows} new` : `${p.validRows}`}{' '}
-                question(s)
+                {plural(willImport, 'question')} will be imported
                 {p.newSubjects.length ? ` · new subjects: ${p.newSubjects.join(', ')}` : ''}
                 {p.newTopics.length ? ` · ${plural(p.newTopics.length, 'new topic')}` : ''}.
               </p>

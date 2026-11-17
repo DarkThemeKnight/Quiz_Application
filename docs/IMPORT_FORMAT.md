@@ -5,7 +5,9 @@ written. Limits: 5 MB, 5,000 questions per file. Subjects, top-level topics, tag
 file are created when missing (matched case-insensitively).
 
 **Duplicates:** a row whose `externalId` already exists is always skipped. A row whose prompt matches an existing
-question (case/punctuation-insensitive) is skipped by default, or imported when you choose “Import anyway”.
+question, or an earlier row in the same file (case/punctuation-insensitive), is skipped by default, or imported
+when you choose “Import anyway”. The preview counts only rows that will actually be skipped. `archived` questions
+stay archived on export and import; restoring a draft in the app returns it to draft.
 
 ## JSON (canonical; also produced by export)
 
@@ -21,7 +23,9 @@ question (case/punctuation-insensitive) is skipped by default, or imported when 
       "topic": "Optional topic",
       "type": "single_choice | multi_choice | true_false | fill_gap",
       "difficulty": "easy | medium | hard (default medium)",
-      "status": "published | draft (default published)",
+      "status": "published | draft | archived (default published)",
+      "reviewStatus": "unreviewed | verified | needs_update (default unreviewed)",
+      "verifiedAt": "YYYY-MM-DD or null (optional)",
       "prompt": "Question text",
       "explanation": "",
       "hint": "",
@@ -56,4 +60,4 @@ UTF-8, RFC 4180 quoting, header row required. Columns (only `type` and `prompt` 
 - `tags`, `collections`: separated by `;`
 - Per-question normalisation options are JSON-only (CSV export omits them).
 
-See `examples/question_bank.sample.csv` / `.json` and the templates on the Import page.
+Ready-to-fill templates covering every question type: `examples/import_template.json` and `examples/import_template.csv` (also downloadable from the Import page). Replace the placeholder rows, keep the header/`format` lines, and give each question a unique `externalId` so re-imports skip it.

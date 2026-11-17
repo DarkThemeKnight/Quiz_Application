@@ -1,0 +1,83 @@
+{
+  "format": "recall-studio-question-bank",
+  "version": 1,
+  "subject": "My Subject",
+  "questions": [
+    {
+      "externalId": "my-subject-001",
+      "topic": "Topic A",
+      "type": "single_choice",
+      "difficulty": "easy",
+      "prompt": "Replace with your question. Exactly one option is correct.",
+      "options": [
+        { "id": "a", "text": "Correct option" },
+        { "id": "b", "text": "Wrong option" },
+        { "id": "c", "text": "Wrong option 2" },
+        { "id": "d", "text": "Wrong option 3" }
+      ],
+      "correctOptionIds": ["a"],
+      "explanation": "Why option A is correct (shown after answering).",
+      "hint": "Optional hint shown only in practice mode.",
+      "source": "Optional source, e.g. book chapter or URL",
+      "tags": ["tag-one", "tag-two"],
+      "collections": ["My Collection"]
+    },
+    {
+      "externalId": "my-subject-002",
+      "topic": "Topic A",
+      "type": "multi_choice",
+      "difficulty": "medium",
+      "prompt": "Replace with a select-all-that-apply question. All correct options must be chosen.",
+      "options": [
+        { "id": "a", "text": "Correct option" },
+        { "id": "b", "text": "Another correct option" },
+        { "id": "c", "text": "Wrong option" }
+      ],
+      "correctOptionIds": ["a", "b"],
+      "explanation": "Explain why A and B are correct and C is not."
+    },
+    {
+      "externalId": "my-subject-003",
+      "topic": "Topic B",
+      "type": "true_false",
+      "difficulty": "easy",
+      "prompt": "Replace with a statement that is either true or false.",
+      "correctBoolean": false,
+      "explanation": "Why the statement is false."
+    },
+    {
+      "externalId": "my-subject-004",
+      "topic": "Topic B",
+      "type": "fill_gap",
+      "difficulty": "medium",
+      "prompt": "One blank: the capital of France is {{blank:1}}.",
+      "blanks": [{ "key": "1", "acceptedAnswers": ["Paris"] }],
+      "explanation": "Case and extra spaces are ignored automatically."
+    },
+    {
+      "externalId": "my-subject-005",
+      "topic": "Topic B",
+      "type": "fill_gap",
+      "difficulty": "hard",
+      "prompt": "Two blanks: water is made of {{blank:h}} and {{blank:o}}.",
+      "blanks": [
+        { "key": "h", "acceptedAnswers": ["hydrogen", "H"] },
+        { "key": "o", "acceptedAnswers": ["oxygen", "O"] }
+      ],
+      "normalization": {
+        "caseSensitive": false,
+        "ignoreAccents": true,
+        "ignorePunctuation": false
+      },
+      "explanation": "List every spelling you want to accept; there is no fuzzy matching."
+    },
+    {
+      "externalId": "my-subject-006",
+      "subject": "Another Subject",
+      "type": "true_false",
+      "status": "draft",
+      "prompt": "Rows can override the file-level subject. Drafts are imported but excluded from sessions.",
+      "correctBoolean": true
+    }
+  ]
+}
