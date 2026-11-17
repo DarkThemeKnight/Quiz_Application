@@ -1,0 +1,328 @@
+{
+  "format": "recall-studio-question-bank",
+  "version": 1,
+  "subject": "Sample: General Knowledge",
+  "questions": [
+    {
+      "externalId": "sample-bank-01",
+      "topic": "Computing",
+      "type": "single_choice",
+      "difficulty": "easy",
+      "prompt": "Which component temporarily stores the instructions and data a processor is currently using?",
+      "options": [
+        { "id": "a", "text": "RAM" },
+        { "id": "b", "text": "SSD" },
+        { "id": "c", "text": "GPU" },
+        { "id": "d", "text": "Power supply" }
+      ],
+      "correctOptionIds": ["a"],
+      "explanation": "RAM holds working data and instructions for fast access while programs run.",
+      "tags": ["sample", "hardware"],
+      "collections": ["Sample set"]
+    },
+    {
+      "externalId": "sample-bank-02",
+      "topic": "Computing",
+      "type": "single_choice",
+      "difficulty": "easy",
+      "prompt": "Which data structure removes items in first-in, first-out order?",
+      "options": [
+        { "id": "a", "text": "Stack" },
+        { "id": "b", "text": "Queue" },
+        { "id": "c", "text": "Binary tree" },
+        { "id": "d", "text": "Hash map" }
+      ],
+      "correctOptionIds": ["b"],
+      "explanation": "A queue processes the earliest inserted item first (FIFO); a stack is last-in, first-out.",
+      "tags": ["sample", "data-structures"],
+      "collections": ["Sample set"]
+    },
+    {
+      "externalId": "sample-bank-03",
+      "topic": "Computing",
+      "type": "true_false",
+      "difficulty": "easy",
+      "prompt": "HTTP is a stateless application-layer protocol.",
+      "correctBoolean": true,
+      "explanation": "Each HTTP request is independent; state is added by mechanisms such as cookies.",
+      "tags": ["sample", "web"],
+      "collections": ["Sample set"]
+    },
+    {
+      "externalId": "sample-bank-04",
+      "topic": "Computing",
+      "type": "single_choice",
+      "difficulty": "medium",
+      "prompt": "Which HTTP status code indicates that the requested resource was not found?",
+      "options": [
+        { "id": "a", "text": "200" },
+        { "id": "b", "text": "301" },
+        { "id": "c", "text": "404" },
+        { "id": "d", "text": "500" }
+      ],
+      "correctOptionIds": ["c"],
+      "explanation": "404 Not Found means the server could not find the requested resource.",
+      "tags": ["sample", "web"]
+    },
+    {
+      "externalId": "sample-bank-05",
+      "topic": "Computing",
+      "type": "multi_choice",
+      "difficulty": "medium",
+      "prompt": "Select all of the following that are version control systems.",
+      "options": [
+        { "id": "a", "text": "Git" },
+        { "id": "b", "text": "Mercurial" },
+        { "id": "c", "text": "PostgreSQL" },
+        { "id": "d", "text": "Subversion" }
+      ],
+      "correctOptionIds": ["a", "b", "d"],
+      "explanation": "Git, Mercurial and Subversion track file history; PostgreSQL is a database.",
+      "tags": ["sample", "tools"]
+    },
+    {
+      "externalId": "sample-bank-06",
+      "topic": "Computing",
+      "type": "fill_gap",
+      "difficulty": "medium",
+      "prompt": "In binary, the decimal number 5 is written as {{blank:1}}.",
+      "blanks": [{ "key": "1", "acceptedAnswers": ["101", "0101"] }],
+      "explanation": "5 = 4 + 1 = 1×2² + 0×2¹ + 1×2⁰, so 101.",
+      "tags": ["sample", "numbers"]
+    },
+    {
+      "externalId": "sample-bank-07",
+      "topic": "Science",
+      "type": "true_false",
+      "difficulty": "easy",
+      "prompt": "Sound can travel through a perfect vacuum.",
+      "correctBoolean": false,
+      "explanation": "Sound is a mechanical wave and needs a medium such as air, water or solids.",
+      "tags": ["sample", "physics"],
+      "collections": ["Sample set"]
+    },
+    {
+      "externalId": "sample-bank-08",
+      "topic": "Science",
+      "type": "fill_gap",
+      "difficulty": "medium",
+      "prompt": "The chemical symbols for sodium and potassium are {{blank:na}} and {{blank:k}}, respectively.",
+      "blanks": [
+        { "key": "na", "acceptedAnswers": ["Na"] },
+        { "key": "k", "acceptedAnswers": ["K"] }
+      ],
+      "explanation": "Na comes from the Latin natrium and K from kalium.",
+      "tags": ["sample", "chemistry"],
+      "collections": ["Sample set"]
+    },
+    {
+      "externalId": "sample-bank-09",
+      "topic": "Science",
+      "type": "single_choice",
+      "difficulty": "easy",
+      "prompt": "Which gas do plants mainly absorb from the air for photosynthesis?",
+      "options": [
+        { "id": "a", "text": "Oxygen" },
+        { "id": "b", "text": "Nitrogen" },
+        { "id": "c", "text": "Carbon dioxide" },
+        { "id": "d", "text": "Hydrogen" }
+      ],
+      "correctOptionIds": ["c"],
+      "explanation": "Plants take in carbon dioxide and release oxygen during photosynthesis.",
+      "tags": ["sample", "biology"]
+    },
+    {
+      "externalId": "sample-bank-10",
+      "topic": "Science",
+      "type": "multi_choice",
+      "difficulty": "medium",
+      "prompt": "Select all of the following that are noble gases.",
+      "options": [
+        { "id": "a", "text": "Helium" },
+        { "id": "b", "text": "Neon" },
+        { "id": "c", "text": "Chlorine" },
+        { "id": "d", "text": "Argon" },
+        { "id": "e", "text": "Oxygen" }
+      ],
+      "correctOptionIds": ["a", "b", "d"],
+      "explanation": "Helium, neon and argon are in group 18; chlorine and oxygen are reactive non-metals.",
+      "tags": ["sample", "chemistry"]
+    },
+    {
+      "externalId": "sample-bank-11",
+      "topic": "Science",
+      "type": "true_false",
+      "difficulty": "medium",
+      "prompt": "Water boils at a lower temperature at high altitude than at sea level.",
+      "correctBoolean": true,
+      "explanation": "Lower air pressure at altitude lowers the boiling point.",
+      "tags": ["sample", "physics"]
+    },
+    {
+      "externalId": "sample-bank-12",
+      "topic": "Science",
+      "type": "fill_gap",
+      "difficulty": "hard",
+      "prompt": "The powerhouse of the cell, where most ATP is produced, is the {{blank:1}}.",
+      "blanks": [{ "key": "1", "acceptedAnswers": ["mitochondrion", "mitochondria"] }],
+      "explanation": "Mitochondria carry out cellular respiration, producing most of the cell's ATP.",
+      "tags": ["sample", "biology"]
+    },
+    {
+      "externalId": "sample-bank-13",
+      "topic": "Geography",
+      "type": "fill_gap",
+      "difficulty": "easy",
+      "prompt": "The capital city of France is {{blank:1}}.",
+      "blanks": [{ "key": "1", "acceptedAnswers": ["Paris"] }],
+      "explanation": "Paris is the capital of France.",
+      "tags": ["sample", "capitals"],
+      "collections": ["Sample set"]
+    },
+    {
+      "externalId": "sample-bank-14",
+      "topic": "Geography",
+      "type": "single_choice",
+      "difficulty": "easy",
+      "prompt": "Which is the largest ocean on Earth?",
+      "options": [
+        { "id": "a", "text": "Atlantic" },
+        { "id": "b", "text": "Indian" },
+        { "id": "c", "text": "Arctic" },
+        { "id": "d", "text": "Pacific" }
+      ],
+      "correctOptionIds": ["d"],
+      "explanation": "The Pacific is the largest and deepest ocean.",
+      "tags": ["sample", "oceans"]
+    },
+    {
+      "externalId": "sample-bank-15",
+      "topic": "Geography",
+      "type": "true_false",
+      "difficulty": "medium",
+      "prompt": "The equator passes through Brazil.",
+      "correctBoolean": true,
+      "explanation": "The equator crosses northern Brazil, near the mouth of the Amazon.",
+      "tags": ["sample"]
+    },
+    {
+      "externalId": "sample-bank-16",
+      "topic": "Geography",
+      "type": "multi_choice",
+      "difficulty": "hard",
+      "prompt": "Select all countries that border Germany.",
+      "options": [
+        { "id": "a", "text": "Poland" },
+        { "id": "b", "text": "Spain" },
+        { "id": "c", "text": "Denmark" },
+        { "id": "d", "text": "Austria" },
+        { "id": "e", "text": "Italy" }
+      ],
+      "correctOptionIds": ["a", "c", "d"],
+      "explanation": "Germany borders Poland, Denmark and Austria (among others), but not Spain or Italy.",
+      "tags": ["sample", "borders"]
+    },
+    {
+      "externalId": "sample-bank-17",
+      "topic": "Mathematics",
+      "type": "multi_choice",
+      "difficulty": "medium",
+      "prompt": "Select all prime numbers.",
+      "options": [
+        { "id": "a", "text": "2" },
+        { "id": "b", "text": "9" },
+        { "id": "c", "text": "11" },
+        { "id": "d", "text": "15" }
+      ],
+      "correctOptionIds": ["a", "c"],
+      "explanation": "2 and 11 are prime; 9 = 3×3 and 15 = 3×5 are composite.",
+      "tags": ["sample", "numbers"],
+      "collections": ["Sample set"]
+    },
+    {
+      "externalId": "sample-bank-18",
+      "topic": "Mathematics",
+      "type": "fill_gap",
+      "difficulty": "easy",
+      "prompt": "5 + 7 = {{blank:1}}",
+      "blanks": [{ "key": "1", "acceptedAnswers": ["12", "twelve"] }],
+      "explanation": "Five plus seven equals twelve.",
+      "tags": ["sample", "arithmetic"]
+    },
+    {
+      "externalId": "sample-bank-19",
+      "topic": "Mathematics",
+      "type": "single_choice",
+      "difficulty": "medium",
+      "prompt": "What is 15% of 200?",
+      "options": [
+        { "id": "a", "text": "15" },
+        { "id": "b", "text": "20" },
+        { "id": "c", "text": "30" },
+        { "id": "d", "text": "35" }
+      ],
+      "correctOptionIds": ["c"],
+      "explanation": "0.15 × 200 = 30.",
+      "tags": ["sample", "percentages"]
+    },
+    {
+      "externalId": "sample-bank-20",
+      "topic": "Mathematics",
+      "type": "true_false",
+      "difficulty": "easy",
+      "prompt": "The sum of the interior angles of a triangle is 180 degrees.",
+      "correctBoolean": true,
+      "explanation": "In Euclidean geometry every triangle's interior angles sum to 180°.",
+      "tags": ["sample", "geometry"]
+    },
+    {
+      "externalId": "sample-bank-21",
+      "topic": "Mathematics",
+      "type": "fill_gap",
+      "difficulty": "hard",
+      "prompt": "The square root of 144 is {{blank:1}}, and 2 to the power of 10 is {{blank:2}}.",
+      "blanks": [
+        { "key": "1", "acceptedAnswers": ["12"] },
+        { "key": "2", "acceptedAnswers": ["1024", "1,024"] }
+      ],
+      "explanation": "12 × 12 = 144 and 2¹⁰ = 1024.",
+      "tags": ["sample", "powers"]
+    },
+    {
+      "externalId": "sample-bank-22",
+      "topic": "Language",
+      "type": "single_choice",
+      "difficulty": "easy",
+      "prompt": "Which word is a synonym of \"rapid\"?",
+      "options": [
+        { "id": "a", "text": "Slow" },
+        { "id": "b", "text": "Quick" },
+        { "id": "c", "text": "Heavy" },
+        { "id": "d", "text": "Quiet" }
+      ],
+      "correctOptionIds": ["b"],
+      "explanation": "\"Rapid\" and \"quick\" both mean fast.",
+      "tags": ["sample", "vocabulary"]
+    },
+    {
+      "externalId": "sample-bank-23",
+      "topic": "Language",
+      "type": "true_false",
+      "difficulty": "medium",
+      "prompt": "In English, \"their\", \"there\" and \"they're\" are homophones.",
+      "correctBoolean": true,
+      "explanation": "They sound the same but have different spellings and meanings.",
+      "tags": ["sample", "grammar"]
+    },
+    {
+      "externalId": "sample-bank-24",
+      "topic": "Language",
+      "type": "fill_gap",
+      "difficulty": "medium",
+      "prompt": "The plural of \"child\" is {{blank:1}}.",
+      "blanks": [{ "key": "1", "acceptedAnswers": ["children"] }],
+      "explanation": "\"Child\" has the irregular plural \"children\".",
+      "tags": ["sample", "grammar"]
+    }
+  ]
+}
