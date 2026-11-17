@@ -1,0 +1,21 @@
+# ADR 0004 — Metric definitions
+
+- **Status:** accepted · 2026-11-17 · implemented in `apps/api/src/services/analytics.ts` and
+  `packages/shared/src/{scoring,insights}.ts`
+
+| Metric                    | Definition                                                                                                                                                                                                                          |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Answer (attempt)          | A session item with `state = 'answered'` and `graded_at` set. Practice items count once checked (even if the session is later abandoned — the learner really answered); exam items count once the exam is submitted.                |
+| Questions in bank         | Published questions. Drafts and archived counted separately.                                                                                                                                                                        |
+| Unique questions answered | Distinct question ids among answers (snapshot id if the question was deleted).                                                                                                                                                      |
+| Practice accuracy         | Σ correct ÷ Σ answers in practice sessions within the range. Pooled, not an average of sessions. Skipped excluded.                                                                                                                  |
+| Exam score                | Per exam: correct ÷ assigned (skipped/unanswered count as wrong).                                                                                                                                                                   |
+| Average exam score        | Unweighted mean of per-exam scores over submitted exams in the range. “Pooled exam accuracy” (Σ correct ÷ Σ assigned) is shown alongside.                                                                                           |
+| Trend                     | Per day (≤120-day spans) or per week, bucketed in the viewer’s time zone. Buckets with no answers are `null` and drawn as gaps, never 0%.                                                                                           |
+| Weak topic                | Topic (or “subject (no topic)”) with ≥ 5 answers in the window and accuracy < 70%. Priority = (1 − accuracy) × min(1, answers ÷ 10); ties: more answers, then more recent. < 5 answers → “limited data”. Dashboard window: 90 days. |
+| Average time              | Mean `time_spent_ms` over answers with 1 s – 30 min recorded; the count of timed answers is shown. Client-reported increments are clamped to ≥ 0 and ≤ 30 min each.                                                                 |
+| Most missed               | Questions with ≥ 1 wrong answer in range, ordered by wrong count, then wrong ratio, then recency.                                                                                                                                   |
+| Due for review            | See ADR 0003.                                                                                                                                                                                                                       |
+
+All ratios go through `ratio()` which returns `null` for a zero denominator; the UI renders `null` as “—” or a
+“not enough data” message. Subject/topic/kind/difficulty come from the snapshot (as answered).
