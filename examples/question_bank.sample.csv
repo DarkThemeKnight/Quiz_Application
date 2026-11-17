@@ -1,0 +1,4 @@
+external_id,subject,topic,type,difficulty,prompt,options_json,correct_answers_json,explanation,tags
+csv-1,General Study,Computing,single_choice,easy,"Which data structure follows first-in, first-out order?","[{""id"":""a"",""text"":""Stack""},{""id"":""b"",""text"":""Queue""},{""id"":""c"",""text"":""Tree""},{""id"":""d"",""text"":""Graph""}]","[""b""]","A queue removes the earliest enqueued element first.","programming;fundamentals"
+csv-2,General Study,Science,true_false,easy,"Sound requires a medium to travel.","[]","true","Mechanical sound waves need a medium, unlike electromagnetic waves.","physics"
+csv-3,General Study,Math,fill_gap,easy,"5 + 7 = {{blank:1}}","[]","{""1"":[""12"",""twelve""]}","Five plus seven equals twelve.","arithmetic"

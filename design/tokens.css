@@ -1,0 +1,43 @@
+/* Recall Studio semantic tokens — no external fonts or assets needed */
+:root {
+  color-scheme: light;
+  --bg: #f6f7fb;
+  --surface: #ffffff;
+  --surface-alt: #f0f3f9;
+  --ink: #18233c;
+  --muted: #657187;
+  --line: #e2e7ef;
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eeedff;
+  --positive: #047857;
+  --positive-soft: #e5f6ef;
+  --warning: #a16207;
+  --warning-soft: #fff4dc;
+  --negative: #c24142;
+  --negative-soft: #fff0ef;
+  --shadow: 0 10px 28px rgba(31, 41, 72, 0.05);
+  --radius-sm: 10px;
+  --radius-md: 16px;
+  --radius-lg: 22px;
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0d1321;
+  --surface: #151d2d;
+  --surface-alt: #202a3c;
+  --ink: #f2f5fb;
+  --muted: #a8b3c8;
+  --line: #334055;
+  --accent: #918aff;
+  --accent-hover: #a7a2ff;
+  --accent-soft: #29284d;
+  --positive: #52cda5;
+  --positive-soft: #173d35;
+  --warning: #e5be67;
+  --warning-soft: #3f321a;
+  --negative: #ff8585;
+  --negative-soft: #4d282c;
+  --shadow: 0 10px 28px rgba(0, 0, 0, 0.15);
+}

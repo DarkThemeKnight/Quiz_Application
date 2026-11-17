@@ -1,0 +1,43 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+.local/
+
+# Local data and backups
+*.dump
+*.backup
+*.bak
+*.sqlite
+*.sqlite3
+*.db
+backups/
+private-data/
+user-data/
+
+# Dependencies and builds
+node_modules/
+.pnpm-store/
+dist/
+build/
+coverage/
+.playwright/
+playwright-report/
+test-results/
+.vite/
+*.tsbuildinfo
+
+# Logs, caches, editor/OS
+*.log
+logs/
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.cache/
+.tmp/

@@ -1,0 +1,42 @@
+{
+  "name": "recall-studio",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Single-owner, local-first quiz and study application backed by PostgreSQL.",
+  "license": "UNLICENSED",
+  "type": "module",
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @recall/api --filter @recall/web dev",
+    "build": "pnpm --filter @recall/web build && pnpm --filter @recall/api build",
+    "start": "pnpm --filter @recall/api start",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm -r test",
+    "test:unit": "pnpm --filter @recall/shared test",
+    "test:api": "pnpm --filter @recall/api test",
+    "test:e2e": "playwright test",
+    "db:generate": "pnpm --filter @recall/api db:generate",
+    "db:migrate": "pnpm --filter @recall/api db:migrate",
+    "db:seed-sample": "pnpm --filter @recall/api db:seed-sample",
+    "owner:create": "pnpm --filter @recall/api owner:create",
+    "owner:password": "pnpm --filter @recall/api owner:password",
+    "check:secrets": "node scripts/check-secrets.mjs",
+    "check": "pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm build"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.65.1",
+    "@types/node": "^26.6.6",
+    "eslint": "^10.15.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "globals": "^17.14.0",
+    "prettier": "^3.10.1",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.2"
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "format": "recall-studio-question-bank",
+  "version": 1,
+  "subject": "General Study",
+  "questions": [
+    {
+      "externalId": "sample-01",
+      "topic": "Computing",
+      "type": "single_choice",
+      "difficulty": "easy",
+      "prompt": "Which component temporarily stores instructions and data currently in use by a processor?",
+      "options": [
+        { "id": "a", "text": "RAM" },
+        { "id": "b", "text": "SSD" },
+        { "id": "c", "text": "GPU" },
+        { "id": "d", "text": "Power supply" }
+      ],
+      "correctOptionIds": ["a"],
+      "explanation": "RAM holds working data and instructions for fast access while a program runs.",
+      "tags": ["fundamentals"]
+    },
+    {
+      "externalId": "sample-02",
+      "topic": "Reasoning",
+      "type": "multi_choice",
+      "difficulty": "medium",
+      "prompt": "Select all prime numbers.",
+      "options": [
+        { "id": "a", "text": "2" },
+        { "id": "b", "text": "9" },
+        { "id": "c", "text": "11" },
+        { "id": "d", "text": "15" }
+      ],
+      "correctOptionIds": ["a", "c"],
+      "explanation": "2 and 11 have no positive divisors except 1 and themselves.",
+      "tags": ["numbers"]
+    },
+    {
+      "externalId": "sample-03",
+      "topic": "Computing",
+      "type": "true_false",
+      "difficulty": "easy",
+      "prompt": "HTTP is a stateless application-layer protocol.",
+      "correctBoolean": true,
+      "explanation": "HTTP requests are independent unless application-level state is maintained by mechanisms such as cookies.",
+      "tags": ["web"]
+    },
+    {
+      "externalId": "sample-04",
+      "topic": "Geography",
+      "type": "fill_gap",
+      "difficulty": "easy",
+      "prompt": "The capital city of France is {{blank:1}}.",
+      "blanks": [{ "key": "1", "acceptedAnswers": ["Paris"] }],
+      "explanation": "Paris is the capital of France.",
+      "tags": ["capitals"]
+    },
+    {
+      "externalId": "sample-05",
+      "topic": "Science",
+      "type": "fill_gap",
+      "difficulty": "medium",
+      "prompt": "The chemical symbols for sodium and potassium are {{blank:1}} and {{blank:2}}, respectively.",
+      "blanks": [
+        { "key": "1", "acceptedAnswers": ["Na"] },
+        { "key": "2", "acceptedAnswers": ["K"] }
+      ],
+      "explanation": "Na comes from natrium, and K from kalium.",
+      "tags": ["chemistry"]
+    }
+  ]
+}
