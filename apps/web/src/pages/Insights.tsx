@@ -20,7 +20,10 @@ import {
   useDocumentTitle,
   useToast,
 } from '../components/ui';
-import { LazyTrendChart as TrendChart } from '../components/LazyTrendChart';
+import {
+  LazySessionTrendChart as SessionTrendChart,
+  LazyTrendChart as TrendChart,
+} from '../components/LazyTrendChart';
 import { SHORT_KIND, formatDate, formatDuration, formatPercent, plural } from '../lib/format';
 import { weakSessionInput } from './Overview';
 
@@ -55,6 +58,7 @@ export function InsightsPage() {
   const [range, setRange] = useState<AnalyticsRange>('30d');
   const [subjectId, setSubjectId] = useState('');
   const [mode, setMode] = useState('all');
+  const [trendView, setTrendView] = useState<'session' | 'day'>('session');
   const subjects = useSubjects();
   const analytics = useAnalytics(range, subjectId, mode);
   const start = useStartSession();
@@ -231,10 +235,33 @@ export function InsightsPage() {
             aria-labelledby="trend-title"
           >
             <div className="section-title">
-              <h2 id="trend-title">Accuracy trend</h2>
-              <span className="small">{RANGE_LABEL[range]}</span>
+              <h2 id="trend-title">
+                {trendView === 'session' ? 'Score by session' : 'Accuracy by day'}
+              </h2>
+              <div className="segmented" role="radiogroup" aria-label="Trend view">
+                {(['session', 'day'] as const).map((v) => (
+                  <label key={v}>
+                    <input
+                      type="radio"
+                      name="trend-view"
+                      checked={trendView === v}
+                      onChange={() => setTrendView(v)}
+                    />
+                    <span>{v === 'session' ? 'By session' : 'By day'}</span>
+                  </label>
+                ))}
+              </div>
             </div>
-            <TrendChart points={a.trend} showExam={mode !== 'practice'} />
+            <p className="small">
+              {trendView === 'session'
+                ? `Every completed session in ${RANGE_LABEL[range].toLowerCase()}, in order${subjectId ? ', scored on the selected subject only' : ''}. Line = pooled score of the last 5 sessions of the same mode.`
+                : `Share of answered questions that were correct per ${a.trend.length > 120 ? 'week' : 'day'}; skipped questions excluded. Shows how consistently you study.`}
+            </p>
+            {trendView === 'session' ? (
+              <SessionTrendChart points={a.sessionTrend} />
+            ) : (
+              <TrendChart points={a.trend} showExam={mode !== 'practice'} />
+            )}
           </section>
 
           <div className="columns">

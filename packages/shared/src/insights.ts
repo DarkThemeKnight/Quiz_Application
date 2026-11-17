@@ -54,3 +54,32 @@ export function rankTopics(
         b.lastAttemptAt.localeCompare(a.lastAttemptAt),
     );
 }
+
+/** Default number of sessions in the rolling average on the session trend. */
+export const SESSION_ROLLING_WINDOW = 5;
+
+/**
+ * Adds a rolling score to each session (input oldest first). The rolling value pools correct and
+ * total over the current and previous sessions *of the same mode* — Σcorrect ÷ Σtotal, not an
+ * average of percentages — so a 3-question session cannot swing it like a 40-question exam.
+ */
+export function withRollingScore<T extends { mode: string; correct: number; total: number }>(
+  sessions: T[],
+  window = SESSION_ROLLING_WINDOW,
+): (T & { rollingPercent: number | null; rollingSessions: number })[] {
+  const history = new Map<string, { correct: number; total: number }[]>();
+  return sessions.map((s) => {
+    const list = history.get(s.mode) ?? [];
+    list.push({ correct: s.correct, total: s.total });
+    if (list.length > window) list.shift();
+    history.set(s.mode, list);
+    const correct = list.reduce((n, x) => n + x.correct, 0);
+    const total = list.reduce((n, x) => n + x.total, 0);
+    const r = ratio(correct, total);
+    return {
+      ...s,
+      rollingPercent: r === null ? null : Math.round(r * 1000) / 10,
+      rollingSessions: list.length,
+    };
+  });
+}

@@ -3,7 +3,7 @@ import { gapBodyToDisplayText, parseGapBody, validateGapMapping } from './fillGa
 import { questionInputSchema, toPublicQuestion, validateQuestionContent } from './question.js';
 import { nextReviewState } from './leitner.js';
 import { clampDurationMs, ratio, summarizeScore } from './scoring.js';
-import { rankTopics } from './insights.js';
+import { rankTopics, withRollingScore } from './insights.js';
 import { parseCsv, toCsv } from './csv.js';
 import { DEFAULT_NORMALIZATION } from './normalize.js';
 
@@ -244,5 +244,26 @@ describe('CSV', () => {
       ['1', 'comma, "quote"\nnewline'],
     ];
     expect(parseCsv(toCsv(data))).toEqual(data);
+  });
+});
+
+describe('session trend rolling score', () => {
+  it('pools correct/total per mode over the window instead of averaging percentages', () => {
+    const out = withRollingScore(
+      [
+        { mode: 'practice', correct: 1, total: 1 },
+        { mode: 'exam', correct: 10, total: 40 },
+        { mode: 'practice', correct: 0, total: 9 },
+        { mode: 'practice', correct: 5, total: 10 },
+      ],
+      2,
+    );
+    expect(out.map((o) => o.rollingPercent)).toEqual([100, 25, 10, 26.3]);
+    expect(out.map((o) => o.rollingSessions)).toEqual([1, 1, 2, 2]);
+  });
+  it('never divides by zero', () => {
+    expect(
+      withRollingScore([{ mode: 'practice', correct: 0, total: 0 }])[0]?.rollingPercent,
+    ).toBeNull();
   });
 });

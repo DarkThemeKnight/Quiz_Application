@@ -26,7 +26,7 @@ import {
   useDocumentTitle,
   useToast,
 } from '../components/ui';
-import { LazyTrendChart as TrendChart } from '../components/LazyTrendChart';
+import { LazySessionTrendChart as SessionTrendChart } from '../components/LazyTrendChart';
 import { formatPercent, formatRelativeDay, plural } from '../lib/format';
 
 export function weakSessionInput(topics: TopicPerformanceDto[], count = 10): SessionCreateInput {
@@ -258,13 +258,14 @@ export function OverviewPage() {
       <div className="columns">
         <section className="card panel" aria-labelledby="trend-title">
           <div className="section-title">
-            <h2 id="trend-title">Accuracy over time</h2>
-            <span className="small">Last 14 days</span>
+            <h2 id="trend-title">Score by session</h2>
+            <span className="small">Last {Math.min(20, d.sessionTrend.length) || 20} sessions</span>
           </div>
           <p className="small">
-            Share of answered questions that were correct, per day. Skipped questions are excluded.
+            Each dot is one completed session (correct ÷ questions). The line is your rolling score
+            over the last 5 sessions of the same mode.
           </p>
-          <TrendChart points={d.trend14d} />
+          <SessionTrendChart points={d.sessionTrend} />
         </section>
 
         <section className="card panel" aria-labelledby="attention-title">

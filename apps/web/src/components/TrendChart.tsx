@@ -7,7 +7,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import type { TrendPointDto } from '@recall/shared';
+import type { SessionTrendPointDto, TrendPointDto } from '@recall/shared';
 
 const shortDate = new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric' });
 
@@ -143,6 +143,197 @@ export function TrendChart({
         )}
         <span className="sr-only">{summary}</span>
       </figcaption>
+    </figure>
+  );
+}
+
+/* ---------- Score by session ---------- */
+
+const dateTime = new Intl.DateTimeFormat(undefined, {
+  day: 'numeric',
+  month: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+});
+
+interface SessionRow {
+  n: number;
+  point: SessionTrendPointDto;
+  practicePct: number | null;
+  examPct: number | null;
+  practiceAvg: number | null;
+  examAvg: number | null;
+}
+
+function SessionTip({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: { payload: SessionRow }[];
+}) {
+  const row = payload?.[0]?.payload;
+  if (!active || !row) return null;
+  const p = row.point;
+  return (
+    <div className="chart-tip">
+      <strong>
+        #{row.n} · {p.mode === 'exam' ? 'Exam' : 'Practice'}
+      </strong>
+      <div style={{ maxWidth: 240, overflowWrap: 'anywhere' }}>{p.title}</div>
+      <div>{dateTime.format(new Date(p.submittedAt))}</div>
+      <div>
+        Score: {p.percent ?? '—'}% ({p.correct}/{p.total})
+      </div>
+      <div>
+        Rolling ({p.rollingSessions} {p.mode} session{p.rollingSessions === 1 ? '' : 's'}):{' '}
+        {p.rollingPercent ?? '—'}%
+      </div>
+    </div>
+  );
+}
+
+/**
+ * One dot per completed session in order (so ten sessions in a day are ten points), plus a
+ * rolling line per mode that pools the last few sessions' correct/total.
+ */
+export function SessionTrendChart({
+  points,
+  window = 5,
+}: {
+  points: SessionTrendPointDto[];
+  window?: number;
+}) {
+  if (points.length === 0) {
+    return (
+      <div className="chart-empty">
+        <div>
+          <strong>No completed sessions yet</strong>
+          <div className="small">
+            Finish a practice session or exam and its score appears here as a point.
+          </div>
+        </div>
+      </div>
+    );
+  }
+  const data: SessionRow[] = points.map((p, i) => ({
+    n: i + 1,
+    point: p,
+    practicePct: p.mode === 'practice' ? p.percent : null,
+    examPct: p.mode === 'exam' ? p.percent : null,
+    practiceAvg: p.mode === 'practice' ? p.rollingPercent : null,
+    examAvg: p.mode === 'exam' ? p.rollingPercent : null,
+  }));
+  const hasPractice = points.some((p) => p.mode === 'practice');
+  const hasExam = points.some((p) => p.mode === 'exam');
+  const describe = (mode: 'practice' | 'exam') => {
+    const list = points.filter((p) => p.mode === mode);
+    if (!list.length) return null;
+    const first = list[0];
+    const last = list[list.length - 1];
+    return list.length === 1
+      ? `${mode}: one session, ${last?.percent}%`
+      : `${mode}: ${list.length} sessions, rolling score from ${first?.rollingPercent}% to ${last?.rollingPercent}%`;
+  };
+  const summary = [describe('practice'), describe('exam')].filter(Boolean).join('; ');
+  const raw = (color: string) => ({
+    r: 4,
+    fill: color,
+    stroke: 'var(--surface)',
+    strokeWidth: 1.5,
+  });
+  return (
+    <figure style={{ margin: 0 }}>
+      <div className="chart-box" aria-hidden="true">
+        <ResponsiveContainer width="100%" height="100%">
+          <LineChart data={data} margin={{ top: 8, right: 12, bottom: 0, left: -18 }}>
+            <CartesianGrid stroke="var(--line)" strokeDasharray="3 4" vertical={false} />
+            <XAxis
+              dataKey="n"
+              tick={{ fill: 'var(--muted)', fontSize: 11 }}
+              tickFormatter={(n: number) => `#${n}`}
+              padding={{ left: 14, right: 14 }}
+              tickLine={false}
+              axisLine={false}
+              minTickGap={14}
+            />
+            <YAxis
+              domain={[0, 100]}
+              ticks={[0, 25, 50, 75, 100]}
+              tick={{ fill: 'var(--muted)', fontSize: 11 }}
+              tickLine={false}
+              axisLine={false}
+              unit="%"
+            />
+            <Tooltip content={<SessionTip />} />
+            {hasPractice && (
+              <Line
+                type="monotone"
+                dataKey="practiceAvg"
+                stroke="var(--accent)"
+                strokeWidth={2.5}
+                dot={false}
+                connectNulls
+                isAnimationActive={false}
+              />
+            )}
+            {hasExam && (
+              <Line
+                type="monotone"
+                dataKey="examAvg"
+                stroke="var(--positive)"
+                strokeWidth={2.5}
+                dot={false}
+                connectNulls
+                isAnimationActive={false}
+              />
+            )}
+            {hasPractice && (
+              <Line
+                dataKey="practicePct"
+                stroke="none"
+                dot={raw('var(--accent)')}
+                activeDot={{ r: 6 }}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            )}
+            {hasExam && (
+              <Line
+                dataKey="examPct"
+                stroke="none"
+                dot={raw('var(--positive)')}
+                activeDot={{ r: 6 }}
+                connectNulls={false}
+                isAnimationActive={false}
+              />
+            )}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+      <figcaption className="legend" style={{ marginTop: 6 }}>
+        {hasPractice && (
+          <span>
+            <i style={{ background: 'var(--accent)' }} />
+            Practice
+          </span>
+        )}
+        {hasExam && (
+          <span>
+            <i style={{ background: 'var(--positive)' }} />
+            Exam
+          </span>
+        )}
+        <span>
+          Dots = single sessions · line = pooled score of the last {window} sessions of that mode
+        </span>
+        <span className="sr-only">{summary}</span>
+      </figcaption>
+      {points.length < 3 && (
+        <p className="small" style={{ margin: '6px 0 0' }}>
+          A trend needs a few sessions — complete {3 - points.length} more to see a direction.
+        </p>
+      )}
     </figure>
   );
 }

@@ -182,6 +182,11 @@ test('dashboard reflects real attempts with clickable paths to practice', async 
   await expect(page.getByText(/of 3 answers correct/)).toBeVisible();
   await expect(page.getByText(/Mean of 1 completed exam/)).toBeVisible();
   await expect(page.getByRole('link', { name: /E2E Biology/ }).first()).toBeVisible();
+  const chart = page.locator('section[aria-labelledby="trend-title"]');
+  await expect(chart.getByRole('heading', { name: 'Score by session' })).toBeVisible();
+  await expect(chart.getByText(/Dots = single sessions/)).toBeVisible();
+  await expect(chart.locator('.recharts-dot').first()).toBeVisible();
+  await chart.screenshot({ path: 'test-results/dashboard-session-trend.png' });
   await page.getByRole('link', { name: 'New session' }).click();
   await expect(page).toHaveURL(/\/practice/);
   await page.goto('/insights');

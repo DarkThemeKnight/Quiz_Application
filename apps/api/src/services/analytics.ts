@@ -1,12 +1,15 @@
 import { and, desc, eq, sql, type SQL } from 'drizzle-orm';
 import {
+  SESSION_ROLLING_WINDOW,
   rankTopics,
+  withRollingScore,
   ratio,
   toPercent,
   type AnalyticsDto,
   type AnalyticsRange,
   type DashboardDto,
   type RateStat,
+  type SessionTrendPointDto,
   type TopicPerformanceDto,
   type TrendPointDto,
 } from '@recall/shared';
@@ -154,6 +157,55 @@ async function trend(
   });
 }
 
+/**
+ * Score per submitted session, oldest first, with a pooled rolling score per mode.
+ * With a subject filter, each session is scored on that subject's items only.
+ * Extra older sessions are fetched so the first visible point has a full rolling window.
+ */
+export async function sessionTrend(
+  db: Db,
+  ownerId: string,
+  opts: {
+    from: Date | null;
+    subjectId?: string | undefined;
+    mode?: 'practice' | 'exam' | 'all' | undefined;
+    limit: number;
+  },
+): Promise<SessionTrendPointDto[]> {
+  const data = await rows<{
+    id: string;
+    title: string;
+    mode: 'practice' | 'exam';
+    submitted_at: Date;
+    total: number;
+    correct: number;
+  }>(
+    db,
+    sql`select ss.id, ss.title, ss.mode, ss.submitted_at,
+               count(*)::int as total, count(*) filter (where si.is_correct)::int as correct
+        from study_sessions ss join session_items si on si.session_id = ss.id
+        where ss.owner_id = ${ownerId} and ss.status = 'submitted'
+          ${opts.mode && opts.mode !== 'all' ? sql`and ss.mode = ${opts.mode}` : sql``}
+          ${opts.subjectId ? sql`and si.snapshot->'subject'->>'id' = ${opts.subjectId}` : sql``}
+        group by ss.id
+        order by ss.submitted_at desc, ss.id desc
+        limit ${opts.limit + SESSION_ROLLING_WINDOW - 1}`,
+  );
+  const points = withRollingScore(
+    data.reverse().map((r) => ({
+      sessionId: r.id,
+      title: r.title,
+      mode: r.mode,
+      submittedAt: new Date(r.submitted_at).toISOString(),
+      correct: r.correct,
+      total: r.total,
+      percent: toPercent(ratio(r.correct, r.total), 1),
+    })),
+  );
+  const fromIso = opts.from?.toISOString();
+  return points.filter((p) => !fromIso || p.submittedAt >= fromIso).slice(-opts.limit);
+}
+
 async function examStats(db: Db, ownerId: string, from: Date | null, subjectId?: string) {
   const conditions: SQL[] = [
     eq(studySessions.ownerId, ownerId),
@@ -299,6 +351,7 @@ export async function getDashboard(
     weakTopics: topicsPerf.filter((t) => t.status === 'weak').slice(0, 3),
     topicPerformance: topicsPerf.slice(0, 8),
     trend14d: trend14,
+    sessionTrend: await sessionTrend(db, ownerId, { from: null, limit: 20 }),
   };
 }
 
@@ -409,6 +462,12 @@ export async function getAnalytics(
       examsCompleted: exams.exams.length,
     },
     trend: trendPoints,
+    sessionTrend: await sessionTrend(db, ownerId, {
+      from,
+      subjectId: q.subjectId,
+      mode: q.mode,
+      limit: 200,
+    }),
     byKind: byKind
       .map((k) => ({
         kind: k.kind as keyof typeof order,

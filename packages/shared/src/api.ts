@@ -415,6 +415,21 @@ export interface TrendPointDto {
   exam: RateStat;
 }
 
+/** One completed session in score order, for the "score by session" trend. */
+export interface SessionTrendPointDto {
+  sessionId: string;
+  title: string;
+  mode: SessionMode;
+  submittedAt: string;
+  /** Correct answers ÷ assigned questions in this session (filtered to a subject when requested). */
+  correct: number;
+  total: number;
+  percent: number | null;
+  /** Pooled score over this and up to (window − 1) previous sessions of the same mode. */
+  rollingPercent: number | null;
+  rollingSessions: number;
+}
+
 export interface DashboardDto {
   bank: { published: number; draft: number; archived: number; subjects: number };
   uniqueQuestionsAnswered: number;
@@ -428,6 +443,8 @@ export interface DashboardDto {
   weakTopics: TopicPerformanceDto[];
   topicPerformance: TopicPerformanceDto[];
   trend14d: TrendPointDto[];
+  /** Last 20 submitted sessions, oldest first. */
+  sessionTrend: SessionTrendPointDto[];
 }
 
 export interface AnalyticsDto {
@@ -445,6 +462,8 @@ export interface AnalyticsDto {
     examsCompleted: number;
   };
   trend: TrendPointDto[];
+  /** Submitted sessions in range (most recent 200), oldest first. */
+  sessionTrend: SessionTrendPointDto[];
   byKind: (RateStat & { kind: QuestionKind; avgTimeMs: number | null; timedAnswers: number })[];
   byDifficulty: (RateStat & { difficulty: Difficulty })[];
   bySubject: (RateStat & { subjectId: string; subjectName: string })[];

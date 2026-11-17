@@ -343,6 +343,17 @@ describe('study sessions, grading, history and analytics', () => {
     expect(dash.json.averageExamScore30d.exams).toBe(3);
     expect(dash.json.averageExamScore30d.percent).toBe(30);
     expect(dash.json.recentSessions.length).toBeGreaterThan(0);
+    // Score by session: one point per submitted session (abandoned excluded), oldest first.
+    const trend = dash.json.sessionTrend;
+    expect(trend).toHaveLength(5);
+    const times = trend.map((p) => p.submittedAt);
+    expect([...times].sort()).toEqual(times);
+    expect(trend.map((p) => p.percent).sort()).toEqual([100, 25, 25, 40, 50].sort());
+    // Rolling score pools counts per mode: practice (2+1)/(4+1) = 60%; exams (1+1+6)/(4+4+15).
+    const lastPractice = trend.filter((p) => p.mode === 'practice').at(-1);
+    const lastExam = trend.filter((p) => p.mode === 'exam').at(-1);
+    expect(lastPractice).toMatchObject({ rollingPercent: 60, rollingSessions: 2 });
+    expect(lastExam).toMatchObject({ rollingPercent: 34.8, rollingSessions: 3 });
     expect(dash.json.activeSession).toBeNull();
 
     const analytics = await call<AnalyticsDto>('GET', '/api/analytics?range=30d');
@@ -356,6 +367,8 @@ describe('study sessions, grading, history and analytics', () => {
     expect(analytics.json.topics[0]?.status).toBeDefined();
     const practiceOnly = await call<AnalyticsDto>('GET', '/api/analytics?range=all&mode=practice');
     expect(practiceOnly.json.totals.answers).toBe(4);
+    expect(practiceOnly.json.sessionTrend.every((p) => p.mode === 'practice')).toBe(true);
+    expect(practiceOnly.json.sessionTrend).toHaveLength(2);
     expect((await call('GET', '/api/analytics?range=forever')).status).toBe(400);
   });
 
