@@ -335,24 +335,24 @@ async function loadParts(tx: Tx, ids: string[]) {
   const blanks = new Map<string, { key: string; acceptedAnswers: string[] }[]>();
   const tagNames = new Map<string, string[]>();
   if (!ids.length) return { options, blanks, tagNames };
-  const [optRows, blankRows, tagRows] = await Promise.all([
-    tx
-      .select()
-      .from(questionOptions)
-      .where(inArray(questionOptions.questionId, ids))
-      .orderBy(asc(questionOptions.position)),
-    tx
-      .select()
-      .from(questionBlanks)
-      .where(inArray(questionBlanks.questionId, ids))
-      .orderBy(asc(questionBlanks.position)),
-    tx
-      .select({ questionId: questionTags.questionId, name: tags.name })
-      .from(questionTags)
-      .innerJoin(tags, eq(tags.id, questionTags.tagId))
-      .where(inArray(questionTags.questionId, ids))
-      .orderBy(asc(tags.name)),
-  ]);
+  // Sequential on purpose: `tx` may be a single transaction connection, which cannot run
+  // concurrent queries (pg warns now and will reject it in pg@9).
+  const optRows = await tx
+    .select()
+    .from(questionOptions)
+    .where(inArray(questionOptions.questionId, ids))
+    .orderBy(asc(questionOptions.position));
+  const blankRows = await tx
+    .select()
+    .from(questionBlanks)
+    .where(inArray(questionBlanks.questionId, ids))
+    .orderBy(asc(questionBlanks.position));
+  const tagRows = await tx
+    .select({ questionId: questionTags.questionId, name: tags.name })
+    .from(questionTags)
+    .innerJoin(tags, eq(tags.id, questionTags.tagId))
+    .where(inArray(questionTags.questionId, ids))
+    .orderBy(asc(tags.name));
   for (const o of optRows) {
     const list = options.get(o.questionId) ?? [];
     list.push({ id: o.id, body: o.body, isCorrect: o.isCorrect, position: o.position });
