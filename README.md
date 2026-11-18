@@ -68,6 +68,10 @@ There is no web sign-up. Forgot the password? Run `pnpm owner:password` (also si
 
 ## Running
 
+**One command:** `./run_app.sh` (dev, http://127.0.0.1:5173) or `./run_app.sh prod` (build + serve on
+http://127.0.0.1:4000). It picks Node from `.nvmrc` via nvm, installs dependencies if needed, applies pending
+migrations, and sets `APP_ORIGIN`/`NODE_ENV` for the chosen mode. The manual equivalents are below.
+
 **Development** (hot reload; web on 5173 proxies `/api` to the API on 4000):
 
 ```bash
